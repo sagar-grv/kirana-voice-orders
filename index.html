@@ -92,7 +92,7 @@ footer a{color:var(--saf2)}
 <body>
 <div class="mesh"></div><div class="grain"></div>
 <header>
-  <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11H6.2z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></i>Kirana<span style="color:var(--saf)">.</span>voice</div>
+  <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11H6.2z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></i><span>Kirana<span style="color:var(--saf)">.</span>voice</span></div>
   <div class="pill"><span class="dot"></span>Prisma v2.5 <b>STT</b> &middot; Timbre v2.5 <b>TTS</b></div>
 </header>
 <main>
@@ -182,6 +182,7 @@ function showOrder(j,voice){
  $('oid').textContent='#'+Math.floor(1000+Math.random()*9000);
  $('heard').textContent=j.transcript||j.reply_input||'(typed order)';$('rep').textContent=j.reply;$('tot').textContent=rupee(j.total);
  $('lines').innerHTML=j.items.length?j.items.map((i,k)=>`<div class="li" style="animation-delay:${k*120}ms"><div><b>${i.item}</b><span class="${i.assumed_qty?'assumed':''}">${i.qty} ${i.unit}${i.assumed_qty?' (quantity not heard, assumed 1)':''} &times; ${rupee(i.price)}</span></div><div class="amt">${rupee(i.line_total)}</div></div>`).join(''):'<div class="empty" style="padding:22px">I could not match any item. Try saying item names like atta, chawal, doodh, tel.</div>';
+ if(j.audio_error)toast(j.audio_error);
  if(j.reply_audio_b64){aud.src='data:audio/wav;base64,'+j.reply_audio_b64;aud.play().catch(()=>{});$('play').hidden=false}else{$('play').hidden=true}
  if(window.innerWidth<900)$('ticket').scrollIntoView({behavior:'smooth',block:'start'})}
 async function runVoice(blob){
