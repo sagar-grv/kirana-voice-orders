@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kirana Voice Orders</title>
+<style>body{font-family:system-ui;max-width:640px;margin:2rem auto;padding:0 1rem}button{font-size:1.1rem;padding:.7rem 1.2rem}pre{background:#f4f4f4;padding:1rem;white-space:pre-wrap}</style>
+<h1>Kirana Voice Orders</h1>
+<p>Bolo: <i>"bhaiya do kilo atta aur ek packet doodh"</i>. Demo uses synthetic catalog and prices. Models: Gnani Prisma v2.5 (STT) and Timbre v2.5 (TTS).</p>
+<button id="rec">Hold to speak</button> <button id="send">Send text</button>
+<input id="txt" placeholder="ya type karein" size="30">
+<pre id="out"></pre><audio id="aud" controls></audio>
+<script>
+const out=document.getElementById('out'),aud=document.getElementById('aud');
+function show(j){out.textContent=(j.transcript?'Transcript: '+j.transcript+'\n':'')+j.items.map(i=>`${i.qty} ${i.unit} ${i.item} = Rs ${i.line_total}`).join('\n')+`\nTotal: Rs ${j.total}\n${j.reply}`;
+ if(j.reply_audio_b64)aud.src='data:audio/wav;base64,'+j.reply_audio_b64,aud.play()}
+document.getElementById('send').onclick=async()=>{const r=await fetch('/order/text',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:txt.value})});show(await r.json())};
+let mr,ch=[];const b=document.getElementById('rec');
+b.onmousedown=b.ontouchstart=async()=>{const s=await navigator.mediaDevices.getUserMedia({audio:true});mr=new MediaRecorder(s);ch=[];mr.ondataavailable=e=>ch.push(e.data);mr.onstop=async()=>{const fd=new FormData();fd.append('audio',new Blob(ch,{type:mr.mimeType}),'a.webm');const r=await fetch('/order/voice',{method:'POST',body:fd});show(await r.json())};mr.start()};
+b.onmouseup=b.ontouchend=()=>mr&&mr.stop();
+</script>
