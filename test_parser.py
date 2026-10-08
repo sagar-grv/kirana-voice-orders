@@ -27,3 +27,7 @@ def test_devanagari_transcript():
     items = parse_order("भाया 2 किलो आता और एक पैकेट दूध देना।")
     d = {i["item"]: i["qty"] for i in items}
     assert d == {"atta": 2, "doodh": 1}
+
+def test_danda():
+    items = parse_order("5 किलो चीनी, एक किलो दाल और 2 पैकेट नमक।")
+    assert {i["item"]: i["qty"] for i in items} == {"cheeni": 5, "dal": 1, "namak": 2}
