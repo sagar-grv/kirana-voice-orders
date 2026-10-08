@@ -2,7 +2,7 @@
 import os, re, base64, httpx
 # Synthetic kirana catalog. Prices are made up for the demo.
 CATALOG = {
-    "atta": {"names": ["atta", "aata", "आटा", "flour"], "unit": "kg", "price": 45},
+    "atta": {"names": ["atta", "aata", "आटा", "आता", "अटा", "flour"], "unit": "kg", "price": 45},
     "chawal": {"names": ["chawal", "rice", "चावल"], "unit": "kg", "price": 60},
     "cheeni": {"names": ["cheeni", "chini", "sugar", "चीनी"], "unit": "kg", "price": 48},
     "dal": {"names": ["dal", "daal", "दाल"], "unit": "kg", "price": 120},
@@ -115,10 +115,17 @@ async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-IN
 def index():
     return FileResponse(os.path.join(os.path.dirname(__file__),"index.html"))
 
+PHRASES = [
+    "bhaiya do kilo atta aur ek packet doodh dena",
+    "teen kilo chawal aur aadha litre tel chahiye",
+    "paanch kilo cheeni, ek kilo dal aur do packet namak",
+    "ek packet chai patti aur do packet doodh",
+]
+
 @app.get("/selftest")
-async def selftest():
+async def selftest(n: int = 0):
     """Round trip on a fixed synthetic phrase: Timbre speaks it, Prisma transcribes it, parser reads it."""
-    phrase = "bhaiya do kilo atta aur ek packet doodh dena"
+    phrase = PHRASES[n % len(PHRASES)]
     try:
         wav = await tts(phrase, language="hi-en")
         transcript = await stt(wav, "synthetic.wav", "hi-IN")
