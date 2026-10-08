@@ -39,3 +39,6 @@ def test_agglutinative_suffix():
 def test_detect_script():
     code, items = detect_and_parse("ਭਾਜੀ ਦੋ ਕਿਲੋ ਆਟਾ ਤੇ ਇੱਕ ਪੈਕੇਟ ਦੁੱਧ")
     assert code == "pa" and len(items) == 2
+
+def test_ml_transcript_variant():
+    assert q(parse_order("ചേട്ടാ രണ്ടു കിലോ അരി ഒരു പാക്കറ്റ് പാൽ തരൂ", "ml")) == {"rice": 2, "milk": 1}
