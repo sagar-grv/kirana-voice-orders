@@ -32,7 +32,7 @@ def _qty_before(tokens, idx):
 
 def parse_order(text: str):
     """Return (items, unmatched_hint). items: [{item, qty, unit, price}]."""
-    low = text.lower()
+    low = text.lower().replace("\u0964", " ").replace("\u0965", " ")
     tokens = re.findall(r"[\w\u0900-\u097F.]+", low)
     items, seen = [], set()
     for key, meta in CATALOG.items():
