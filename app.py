@@ -68,6 +68,16 @@ def _headers():
     return {"X-API-Key-ID": key}
 
 async def stt(audio: bytes, filename: str, language_code="hi-IN") -> str:
+    import asyncio
+    for attempt in range(3):
+        try:
+            return await _stt(audio, filename, language_code)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 429 or attempt == 2:
+                raise
+            await asyncio.sleep(1.5 * (attempt + 1))
+
+async def _stt(audio, filename, language_code) -> str:
     async with httpx.AsyncClient(timeout=60) as c:
         r = await c.post(f"{BASE}/stt/v3", headers=_headers(),
                          files={"audio_file": (filename, audio)},
@@ -76,6 +86,16 @@ async def stt(audio: bytes, filename: str, language_code="hi-IN") -> str:
         return r.json()["transcript"]
 
 async def tts(text: str, voice="Nalini", language="hi-en") -> bytes:
+    import asyncio
+    for attempt in range(3):
+        try:
+            return await _tts(text, voice, language)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code != 429 or attempt == 2:
+                raise
+            await asyncio.sleep(1.5 * (attempt + 1))
+
+async def _tts(text, voice, language) -> bytes:
     async with httpx.AsyncClient(timeout=60) as c:
         r = await c.post(f"{BASE}/api/v1/tts/inference", headers=_headers(),
                          json={"text": text, "voice": voice, "model": "timbre-v2.5",
@@ -104,11 +124,15 @@ async def order_text(payload: dict):
 @app.post("/order/voice")
 async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-IN"):
     data = await audio.read()
+    wav, audio_error = None, None
     try:
         transcript = await stt(data, audio.filename or "audio.wav", language_code)
         items = parse_order(transcript)
         reply = reply_text(items)
-        wav = await tts(reply)
+        try:
+            wav = await tts(reply)
+        except httpx.HTTPStatusError as e:
+            audio_error = f"Voice reply unavailable (Gnani TTS {e.response.status_code}). Text reply shown instead."
     except httpx.HTTPStatusError as e:
         return JSONResponse({"error": f"Gnani API returned {e.response.status_code} on {e.request.url.path}: {e.response.text[:160]}"}, status_code=502)
     except RuntimeError as e:
@@ -116,7 +140,7 @@ async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-IN
     except Exception as e:
         return JSONResponse({"error": f"{type(e).__name__}: {str(e)[:160]}"}, status_code=502)
     return {"transcript": transcript, "items": items, "total": total(items),
-            "reply": reply, "reply_audio_b64": base64.b64encode(wav).decode()}
+            "reply": reply, "reply_audio_b64": base64.b64encode(wav).decode() if wav else None, "audio_error": audio_error}
 
 @app.get("/")
 def index():
