@@ -114,3 +114,12 @@ async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-en
 @app.get("/")
 def index():
     return FileResponse(os.path.join(os.path.dirname(__file__),"index.html"))
+
+@app.get("/selftest")
+async def selftest():
+    """Round trip on a fixed synthetic phrase: Timbre speaks it, Prisma transcribes it, parser reads it."""
+    phrase = "bhaiya do kilo atta aur ek packet doodh dena"
+    wav = await tts(phrase, language="hi-en")
+    transcript = await stt(wav, "synthetic.wav", "hi-en")
+    items = parse_order(transcript)
+    return {"phrase": phrase, "transcript": transcript, "items": items, "total": total(items)}
