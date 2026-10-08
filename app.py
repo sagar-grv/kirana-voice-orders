@@ -6,16 +6,16 @@ CATALOG = {
     "chawal": {"names": ["chawal", "rice", "चावल"], "unit": "kg", "price": 60},
     "cheeni": {"names": ["cheeni", "chini", "sugar", "चीनी"], "unit": "kg", "price": 48},
     "dal": {"names": ["dal", "daal", "दाल"], "unit": "kg", "price": 120},
-    "tel": {"names": ["tel", "oil", "तेल"], "unit": "litre", "price": 150},
+    "tel": {"names": ["tel", "oil", "तेल", "टेल"], "unit": "litre", "price": 150},
     "doodh": {"names": ["doodh", "milk", "दूध"], "unit": "packet", "price": 28},
-    "chai patti": {"names": ["chai patti", "chai", "tea", "चाय पत्ती"], "unit": "packet", "price": 90},
+    "chai patti": {"names": ["chai patti", "chai", "tea", "चाय पत्ती", "चाय पाती"], "unit": "packet", "price": 90},
     "namak": {"names": ["namak", "salt", "नमक"], "unit": "packet", "price": 25},
 }
 
 """Rule-based Hinglish order parser. No LLM; deterministic and testable."""
 
 NUM_WORDS = {
-    "ek": 1, "one": 1, "एक": 1, "do": 2, "two": 2, "दो": 2, "teen": 3, "three": 3, "तीन": 3,
+    "ek": 1, "one": 1, "एक": 1, "do": 2, "two": 2, "दो": 2, "teen": 3, "three": 3, "तीन": 3, "टेंट": 3, "टीन": 3,
     "char": 4, "chaar": 4, "four": 4, "चार": 4, "paanch": 5, "panch": 5, "five": 5, "पांच": 5,
     "chhe": 6, "six": 6, "saat": 7, "seven": 7, "aath": 8, "eight": 8, "nau": 9, "nine": 9,
     "das": 10, "ten": 10, "aadha": 0.5, "adha": 0.5, "half": 0.5, "आधा": 0.5,
