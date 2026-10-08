@@ -67,7 +67,7 @@ def _headers():
         raise RuntimeError("GNANI_API_KEY not set")
     return {"X-API-Key-ID": key}
 
-async def stt(audio: bytes, filename: str, language_code="hi-en") -> str:
+async def stt(audio: bytes, filename: str, language_code="hi-IN") -> str:
     async with httpx.AsyncClient(timeout=60) as c:
         r = await c.post(f"{BASE}/stt/v3", headers=_headers(),
                          files={"audio_file": (filename, audio)},
@@ -102,7 +102,7 @@ async def order_text(payload: dict):
     return {"items": items, "total": total(items), "reply": reply_text(items)}
 
 @app.post("/order/voice")
-async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-en"):
+async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-IN"):
     data = await audio.read()
     transcript = await stt(data, audio.filename or "audio.wav", language_code)
     items = parse_order(transcript)
@@ -121,7 +121,7 @@ async def selftest():
     phrase = "bhaiya do kilo atta aur ek packet doodh dena"
     try:
         wav = await tts(phrase, language="hi-en")
-        transcript = await stt(wav, "synthetic.wav", "hi-en")
+        transcript = await stt(wav, "synthetic.wav", "hi-IN")
     except httpx.HTTPStatusError as e:
         return {"error": f"{e.request.url.path} -> {e.response.status_code}", "body": e.response.text[:300]}
     except Exception as e:
