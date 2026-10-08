@@ -87,7 +87,7 @@ async def tts(text: str, voice="Nalini", language="hi-en") -> bytes:
         return r.content
 
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 app = FastAPI(title="Kirana Voice Orders (demo, synthetic data)")
 
@@ -104,10 +104,17 @@ async def order_text(payload: dict):
 @app.post("/order/voice")
 async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-IN"):
     data = await audio.read()
-    transcript = await stt(data, audio.filename or "audio.wav", language_code)
-    items = parse_order(transcript)
-    reply = reply_text(items)
-    wav = await tts(reply)
+    try:
+        transcript = await stt(data, audio.filename or "audio.wav", language_code)
+        items = parse_order(transcript)
+        reply = reply_text(items)
+        wav = await tts(reply)
+    except httpx.HTTPStatusError as e:
+        return JSONResponse({"error": f"Gnani API returned {e.response.status_code} on {e.request.url.path}: {e.response.text[:160]}"}, status_code=502)
+    except RuntimeError as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    except Exception as e:
+        return JSONResponse({"error": f"{type(e).__name__}: {str(e)[:160]}"}, status_code=502)
     return {"transcript": transcript, "items": items, "total": total(items),
             "reply": reply, "reply_audio_b64": base64.b64encode(wav).decode()}
 
@@ -115,23 +122,24 @@ async def order_voice(audio: UploadFile = File(...), language_code: str = "hi-IN
 def index():
     return FileResponse(os.path.join(os.path.dirname(__file__),"index.html"))
 
-PHRASES = [
-    "bhaiya do kilo atta aur ek packet doodh dena",
-    "teen kilo chawal aur aadha litre tel chahiye",
-    "paanch kilo cheeni, ek kilo dal aur do packet namak",
-    "ek packet chai patti aur do packet doodh",
-]
 
-@app.get("/selftest")
-async def selftest(n: int = 0, lang: str = "hi-IN"):
-    """Round trip on a fixed synthetic phrase: Timbre speaks it, Prisma transcribes it, parser reads it."""
-    phrase = PHRASES[n % len(PHRASES)]
+SAMPLES = [
+    "bhaiya do kilo atta aur ek packet doodh dena",
+    "paanch kilo cheeni, ek kilo dal aur do packet namak",
+]
+_cache = {}
+
+@app.get("/catalog")
+def catalog():
+    return [{"item": k, "unit": v["unit"], "price": v["price"]} for k, v in CATALOG.items()]
+
+@app.get("/sample")
+async def sample(n: int = 0):
+    """Synthetic customer audio made with Timbre (two fixed phrases, cached)."""
+    n = n % len(SAMPLES)
     try:
-        wav = await tts(phrase, language="hi-en")
-        transcript = await stt(wav, "synthetic.wav", lang if lang in ("hi-IN", "en-IN", "indic-auto") else "hi-IN")
-    except httpx.HTTPStatusError as e:
-        return {"error": f"{e.request.url.path} -> {e.response.status_code}", "body": e.response.text[:300]}
+        if n not in _cache:
+            _cache[n] = await tts(SAMPLES[n], language="hi-en")
     except Exception as e:
-        return {"error": type(e).__name__, "detail": str(e)[:200]}
-    items = parse_order(transcript)
-    return {"phrase": phrase, "transcript": transcript, "items": items, "total": total(items)}
+        return JSONResponse({"error": str(e)[:160]}, status_code=502)
+    return Response(_cache[n], media_type="audio/wav")
