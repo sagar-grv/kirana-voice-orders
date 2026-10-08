@@ -1,17 +1,211 @@
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kirana Voice Orders</title>
-<style>body{font-family:system-ui;max-width:640px;margin:2rem auto;padding:0 1rem}button{font-size:1.1rem;padding:.7rem 1.2rem}pre{background:#f4f4f4;padding:1rem;white-space:pre-wrap}</style>
-<h1>Kirana Voice Orders</h1>
-<p>Bolo: <i>"bhaiya do kilo atta aur ek packet doodh"</i>. Demo uses synthetic catalog and prices. Models: Gnani Prisma v2.5 (STT) and Timbre v2.5 (TTS).</p>
-<button id="rec">Hold to speak</button> <button id="send">Send text</button>
-<input id="txt" placeholder="ya type karein" size="30">
-<pre id="out"></pre><audio id="aud" controls></audio>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07070b">
+<title>Kirana Voice Orders - order in Hinglish, just speak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07070b;--card:rgba(255,255,255,.045);--line:rgba(255,255,255,.09);--txt:#f2efe9;--mut:#9a98a3;--saf:#ff9933;--saf2:#ffb866;--grn:#1fd18b;--red:#ff5d6c;--r:22px}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:var(--txt);font-family:Inter,'Noto Sans Devanagari',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100dvh;overflow-x:hidden}
+.mesh{position:fixed;inset:0;z-index:-2;background:
+ radial-gradient(60vw 50vh at 12% -5%,rgba(255,153,51,.22),transparent 60%),
+ radial-gradient(50vw 45vh at 95% 10%,rgba(31,209,139,.14),transparent 60%),
+ radial-gradient(70vw 60vh at 50% 120%,rgba(120,90,255,.16),transparent 60%)}
+.grain{position:fixed;inset:0;z-index:-1;opacity:.07;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px clamp(16px,4vw,48px)}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque';font-weight:800;font-size:1.15rem;letter-spacing:-.02em}
+.logo i{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--saf),#ff5e3a);display:grid;place-items:center;box-shadow:0 6px 24px rgba(255,120,40,.45)}
+.logo svg{width:17px;height:17px}
+.pill{font:500 .72rem 'JetBrains Mono',monospace;color:var(--mut);border:1px solid var(--line);padding:7px 11px;border-radius:99px;background:var(--card);backdrop-filter:blur(10px);display:flex;gap:8px;align-items:center}
+.pill b{color:var(--saf2);font-weight:500}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 10px var(--grn);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+main{max-width:1180px;margin:0 auto;padding:6px clamp(16px,4vw,48px) 80px;display:grid;grid-template-columns:1.05fr .95fr;gap:28px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+h1{font-family:'Bricolage Grotesque';font-weight:800;font-size:clamp(2.3rem,6vw,4.1rem);line-height:.98;letter-spacing:-.045em;margin:14px 0 14px}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--saf),#ff5e3a 60%,var(--saf2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);max-width:46ch;line-height:1.55;font-size:1.02rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.stage{margin-top:26px;padding:28px 20px 20px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden}
+.orbwrap{position:relative;width:176px;height:176px;display:grid;place-items:center;margin:6px 0 4px}
+.ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,153,51,.35);opacity:0}
+.listening .ring{animation:ring 2.4s infinite}.listening .ring:nth-child(2){animation-delay:.8s}.listening .ring:nth-child(3){animation-delay:1.6s}
+@keyframes ring{0%{transform:scale(.55);opacity:.8}100%{transform:scale(1.25);opacity:0}}
+#mic{position:relative;width:112px;height:112px;border-radius:50%;border:0;cursor:pointer;color:#fff;background:radial-gradient(circle at 30% 25%,#ffc27a,var(--saf) 45%,#e8541f);box-shadow:0 14px 50px rgba(255,110,30,.5),inset 0 2px 8px rgba(255,255,255,.45);transition:transform .25s,box-shadow .25s;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
+#mic:hover{transform:scale(1.05)}#mic:active{transform:scale(.96)}
+#mic svg{width:42px;height:42px}
+.listening #mic{background:radial-gradient(circle at 30% 25%,#ff9aa4,var(--red) 50%,#c2263a);box-shadow:0 14px 60px rgba(255,70,90,.6)}
+.busy #mic{pointer-events:none;filter:saturate(.4) brightness(.8)}
+canvas#wave{width:100%;max-width:440px;height:64px;margin-top:6px}
+#status{font:500 .9rem Inter;color:var(--txt);margin-top:6px;min-height:1.4em;text-align:center}
+.hint{font-size:.78rem;color:var(--mut);margin-top:4px;text-align:center}
+.steps{display:flex;gap:6px;margin-top:18px;width:100%;max-width:470px}
+.step{flex:1;padding:9px 6px;border-radius:12px;border:1px solid var(--line);font:500 .68rem 'JetBrains Mono',monospace;color:var(--mut);text-align:center;position:relative;overflow:hidden;transition:.3s}
+.step.on{color:var(--saf2);border-color:rgba(255,153,51,.55);background:rgba(255,153,51,.1)}
+.step.on::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:40%;background:var(--saf);animation:slide 1s infinite linear}
+.step.done{color:var(--grn);border-color:rgba(31,209,139,.4)}
+@keyframes slide{0%{left:-40%}100%{left:100%}}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;justify-content:center}
+.chip{font:500 .8rem Inter;color:var(--txt);background:var(--card);border:1px solid var(--line);padding:8px 13px;border-radius:99px;cursor:pointer;transition:.2s}
+.chip:hover{border-color:var(--saf);transform:translateY(-1px)}
+.chip.sample{background:linear-gradient(135deg,rgba(255,153,51,.2),rgba(255,94,58,.12));border-color:rgba(255,153,51,.5)}
+.typebox{display:flex;gap:8px;width:100%;max-width:470px;margin-top:16px}
+.typebox input{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--txt);padding:12px 14px;border-radius:14px;font:400 .92rem Inter;outline:0}
+.typebox input:focus{border-color:var(--saf)}
+.btn{background:var(--txt);color:#111;border:0;border-radius:14px;padding:0 16px;font:600 .88rem Inter;cursor:pointer}
+.ticket{padding:22px;position:relative}
+.ticket h3{font:700 .72rem 'JetBrains Mono';letter-spacing:.14em;color:var(--mut);text-transform:uppercase;display:flex;justify-content:space-between}
+.empty{color:var(--mut);text-align:center;padding:46px 10px;line-height:1.6;font-size:.95rem}
+.empty svg{width:44px;height:44px;opacity:.5;margin-bottom:8px}
+.tr{margin:14px 0;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.35);border:1px dashed var(--line);font:400 1rem 'Noto Sans Devanagari',Inter}
+.tr small{display:block;font:500 .66rem 'JetBrains Mono';color:var(--mut);letter-spacing:.1em;margin-bottom:5px;text-transform:uppercase}
+.li{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--line);opacity:0;transform:translateY(10px);animation:in .5s forwards}
+@keyframes in{to{opacity:1;transform:none}}
+.li b{font:600 1rem Inter;text-transform:capitalize}.li span{color:var(--mut);font-size:.82rem;display:block;margin-top:2px}
+.li .amt{font:500 1rem 'JetBrains Mono'}
+.assumed{color:var(--saf2)!important}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;font-family:'Bricolage Grotesque';font-weight:800}
+.total strong{font-size:2.1rem;letter-spacing:-.03em;background:linear-gradient(90deg,var(--saf2),var(--saf));-webkit-background-clip:text;background-clip:text;color:transparent}
+.reply{margin-top:14px;padding:14px;border-radius:16px;background:rgba(31,209,139,.08);border:1px solid rgba(31,209,139,.3);display:flex;gap:12px;align-items:center}
+.reply p{flex:1;font-size:.93rem;line-height:1.45}
+.play{width:42px;height:42px;flex:none;border-radius:50%;border:0;background:var(--grn);color:#04281b;cursor:pointer;display:grid;place-items:center}
+.play svg{width:18px;height:18px}
+.confirm{margin-top:14px;width:100%;padding:14px;border-radius:14px;border:0;background:linear-gradient(90deg,var(--saf),#ff5e3a);color:#fff;font:700 .95rem Inter;cursor:pointer;box-shadow:0 10px 30px rgba(255,110,30,.35)}
+.placed{margin-top:14px;text-align:center;color:var(--grn);font:500 .85rem 'JetBrains Mono'}
+.catalog{margin-top:22px;padding:18px 20px}
+.catalog summary{cursor:pointer;font:600 .85rem Inter;color:var(--mut);list-style:none;display:flex;justify-content:space-between}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 22px;margin-top:12px;font-size:.84rem}
+.grid div{display:flex;justify-content:space-between;color:var(--mut);border-bottom:1px dotted var(--line);padding:5px 0}.grid b{color:var(--txt);font-weight:500}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,40px);opacity:0;max-width:min(560px,92vw);background:#241216;border:1px solid rgba(255,93,108,.55);color:#ffd9dd;padding:14px 18px;border-radius:16px;font-size:.88rem;line-height:1.45;transition:.35s;z-index:9;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#toast.show{opacity:1;transform:translate(-50%,0)}#toast b{color:#fff}
+footer{text-align:center;color:var(--mut);font-size:.74rem;padding:0 16px 40px;line-height:1.6}
+footer a{color:var(--saf2)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="mesh"></div><div class="grain"></div>
+<header>
+  <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11H6.2z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></i>Kirana<span style="color:var(--saf)">.</span>voice</div>
+  <div class="pill"><span class="dot"></span>Prisma v2.5 <b>STT</b> &middot; Timbre v2.5 <b>TTS</b></div>
+</header>
+<main>
+<section>
+  <div class="pill" style="display:inline-flex">Hinglish &middot; Hindi &middot; English</div>
+  <h1>Bolo. <em>Order ho<br>jayega.</em></h1>
+  <p class="sub">A voice counter for your neighbourhood kirana. Say your list the way you would at the shop, and get a bill and a spoken confirmation back in seconds.</p>
+  <div class="card stage" id="stage">
+    <div class="orbwrap"><span class="ring"></span><span class="ring"></span><span class="ring"></span>
+      <button id="mic" aria-label="Tap to speak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button></div>
+    <canvas id="wave" width="880" height="128"></canvas>
+    <div id="status">Tap the mic and speak</div>
+    <div class="hint" id="hint">Try: &ldquo;do kilo atta aur ek packet doodh&rdquo;</div>
+    <div class="steps"><div class="step" id="s1">LISTEN</div><div class="step" id="s2">TRANSCRIBE</div><div class="step" id="s3">UNDERSTAND</div><div class="step" id="s4">REPLY</div></div>
+    <div class="row"><button class="chip sample" id="smp">&#9654; Play a sample customer</button></div>
+    <div class="typebox"><input id="txt" placeholder="or type: teen kilo chawal aur aadha litre tel" autocomplete="off"><button class="btn" id="go">Order</button></div>
+  </div>
+  <details class="card catalog"><summary>Today's price list <span>+</span></summary><div class="grid" id="cat"></div></details>
+</section>
+<section>
+  <div class="card ticket" id="ticket">
+    <h3><span>Order ticket</span><span id="oid">&mdash;</span></h3>
+    <div class="empty" id="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6"/></svg><br>Your bill will appear here.<br>Speak an order to begin.</div>
+    <div id="bill" hidden>
+      <div class="tr"><small>What I heard</small><span id="heard"></span></div>
+      <div id="lines"></div>
+      <div class="total"><span style="color:var(--mut);font:500 .8rem 'JetBrains Mono'">TOTAL</span><strong id="tot"></strong></div>
+      <div class="reply"><button class="play" id="play" aria-label="Play reply"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button><p id="rep"></p></div>
+      <button class="confirm" id="conf">Confirm order</button><div class="placed" id="placed" hidden></div>
+    </div>
+  </div>
+</section>
+</main>
+<footer>Demo with a synthetic catalog and prices. No real orders, no personal data.<br>Speech-to-text: Gnani Prisma v2.5 &middot; Text-to-speech: Gnani Timbre v2.5 &middot; Order parsing: plain rules, no LLM.<br>Built for the Great Indian AI Internship Challenge by Sagar Gurav, Shirpur.</footer>
+<div id="toast" role="alert"></div>
+<audio id="aud" playsinline></audio>
 <script>
-const out=document.getElementById('out'),aud=document.getElementById('aud');
-function show(j){out.textContent=(j.transcript?'Transcript: '+j.transcript+'\n':'')+j.items.map(i=>`${i.qty} ${i.unit} ${i.item} = Rs ${i.line_total}`).join('\n')+`\nTotal: Rs ${j.total}\n${j.reply}`;
- if(j.reply_audio_b64)aud.src='data:audio/wav;base64,'+j.reply_audio_b64,aud.play()}
-document.getElementById('send').onclick=async()=>{const r=await fetch('/order/text',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:txt.value})});show(await r.json())};
-let mr,ch=[];const b=document.getElementById('rec');
-b.onmousedown=b.ontouchstart=async()=>{const s=await navigator.mediaDevices.getUserMedia({audio:true});mr=new MediaRecorder(s);ch=[];mr.ondataavailable=e=>ch.push(e.data);mr.onstop=async()=>{const fd=new FormData();fd.append('audio',new Blob(ch,{type:mr.mimeType}),'a.webm');const r=await fetch('/order/voice',{method:'POST',body:fd});show(await r.json())};mr.start()};
-b.onmouseup=b.ontouchend=()=>mr&&mr.stop();
+const $=id=>document.getElementById(id);
+const stage=$('stage'),mic=$('mic'),statusEl=$('status'),hint=$('hint'),aud=$('aud');
+let busy=false,rec=null,toastT;
+function toast(msg){const t=$('toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),9000)}
+function setStatus(s,h){statusEl.textContent=s;if(h!==undefined)hint.textContent=h}
+function steps(active){['s1','s2','s3','s4'].forEach((id,i)=>{const e=$(id);e.className='step'+(i<active?' done':i===active?' on':'')})}
+const rupee=n=>'\u20B9'+(Math.round(n*100)/100).toLocaleString('en-IN');
+fetch('/catalog').then(r=>r.json()).then(c=>{$('cat').innerHTML=c.map(i=>`<div><span>${i.item}</span><b>${rupee(i.price)} / ${i.unit}</b></div>`).join('')}).catch(()=>{});
+
+/* ---------- waveform ---------- */
+const cv=$('wave'),cx=cv.getContext('2d');let analyser=null,raf;
+function draw(){const w=cv.width,h=cv.height;cx.clearRect(0,0,w,h);const bars=48,gap=6,bw=(w-gap*(bars-1))/bars;let d=null;
+ if(analyser){d=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(d)}
+ const t=performance.now()/600;
+ for(let i=0;i<bars;i++){let v;if(d){v=d[Math.floor(i*d.length*0.6/bars)]/255}else{v=.05+.04*Math.sin(t+i*.4)}
+  const bh=Math.max(4,v*h*.95),x=i*(bw+gap),y=(h-bh)/2;const g=cx.createLinearGradient(0,y,0,y+bh);g.addColorStop(0,'#ffb866');g.addColorStop(1,'#ff5e3a');cx.fillStyle=g;cx.beginPath();cx.roundRect?cx.roundRect(x,y,bw,bh,bw/2):cx.rect(x,y,bw,bh);cx.fill()}
+ raf=requestAnimationFrame(draw)}
+draw();
+
+/* ---------- recording to 16k mono WAV (works on iOS Safari and Chrome) ---------- */
+function encodeWav(chunks,rate){let len=0;chunks.forEach(c=>len+=c.length);const all=new Float32Array(len);let o=0;chunks.forEach(c=>{all.set(c,o);o+=c.length});
+ const out=16000,ratio=rate/out,n=Math.floor(all.length/ratio),pcm=new Int16Array(n);let peak=0;
+ for(let i=0;i<n;i++){const a=Math.floor(i*ratio),b=Math.min(all.length,Math.floor((i+1)*ratio));let s=0;for(let j=a;j<b;j++)s+=all[j];s/=Math.max(1,b-a);peak=Math.max(peak,Math.abs(s));pcm[i]=Math.max(-1,Math.min(1,s))*32767}
+ const buf=new ArrayBuffer(44+n*2),v=new DataView(buf),W=(p,s)=>{for(let i=0;i<s.length;i++)v.setUint8(p+i,s.charCodeAt(i))};
+ W(0,'RIFF');v.setUint32(4,36+n*2,true);W(8,'WAVE');W(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,out,true);v.setUint32(28,out*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);W(36,'data');v.setUint32(40,n*2,true);
+ new Int16Array(buf,44).set(pcm);return{blob:new Blob([buf],{type:'audio/wav'}),peak,secs:n/out}}
+
+async function startRec(){
+ if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('<b>Microphone is not available here.</b> Open this page over https in Chrome or Safari (not inside an in-app browser like Instagram or WhatsApp). You can still use the sample customer or type your order.');return}
+ const AC=window.AudioContext||window.webkitAudioContext;const ctx=new AC();try{await ctx.resume()}catch(e){}
+ let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+ catch(e){ctx.close();const m=e&&e.name;toast(m==='NotAllowedError'||m==='SecurityError'?'<b>Microphone permission is blocked.</b> Allow the mic for this site in your browser settings (the lock icon near the address bar), then tap the mic again.':m==='NotFoundError'?'<b>No microphone found</b> on this device.':'<b>Could not start the microphone</b> ('+(m||'unknown error')+').');return}
+ const src=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=256;src.connect(analyser);
+ const proc=ctx.createScriptProcessor(4096,1,1),chunks=[];proc.onaudioprocess=e=>chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+ const mute=ctx.createGain();mute.gain.value=0;src.connect(proc);proc.connect(mute);mute.connect(ctx.destination);
+ rec={ctx,stream,proc,chunks,t0:Date.now(),auto:setTimeout(stopRec,25000)};
+ stage.classList.add('listening');setStatus('Listening... tap again when done','Speak naturally, up to 25 seconds');steps(0)}
+async function stopRec(){
+ if(!rec)return;const r=rec;rec=null;clearTimeout(r.auto);stage.classList.remove('listening');
+ r.proc.disconnect();r.stream.getTracks().forEach(t=>t.stop());analyser=null;const rate=r.ctx.sampleRate;r.ctx.close();
+ const {blob,peak,secs}=encodeWav(r.chunks,rate);
+ if(secs<0.6){setStatus('Too short','Tap the mic, speak your whole order, then tap again');steps(-1);toast('<b>That was too short.</b> Tap the mic, say your full order, then tap again to finish.');return}
+ if(peak<0.01){setStatus('I heard silence','Check that your mic is not muted');steps(-1);toast('<b>I did not hear anything.</b> The microphone seems silent. Check it is not muted, then try again.');return}
+ runVoice(blob)}
+mic.onclick=()=>{if(busy)return;rec?stopRec():startRec()};
+
+/* ---------- pipeline ---------- */
+function showOrder(j,voice){
+ $('empty').hidden=true;$('bill').hidden=false;$('placed').hidden=true;$('conf').hidden=false;
+ $('oid').textContent='#'+Math.floor(1000+Math.random()*9000);
+ $('heard').textContent=j.transcript||j.reply_input||'(typed order)';$('rep').textContent=j.reply;$('tot').textContent=rupee(j.total);
+ $('lines').innerHTML=j.items.length?j.items.map((i,k)=>`<div class="li" style="animation-delay:${k*120}ms"><div><b>${i.item}</b><span class="${i.assumed_qty?'assumed':''}">${i.qty} ${i.unit}${i.assumed_qty?' (quantity not heard, assumed 1)':''} &times; ${rupee(i.price)}</span></div><div class="amt">${rupee(i.line_total)}</div></div>`).join(''):'<div class="empty" style="padding:22px">I could not match any item. Try saying item names like atta, chawal, doodh, tel.</div>';
+ if(j.reply_audio_b64){aud.src='data:audio/wav;base64,'+j.reply_audio_b64;aud.play().catch(()=>{});$('play').hidden=false}else{$('play').hidden=true}
+ if(window.innerWidth<900)$('ticket').scrollIntoView({behavior:'smooth',block:'start'})}
+async function runVoice(blob){
+ busy=true;stage.classList.add('busy');steps(1);setStatus('Transcribing with Gnani Prisma...','');
+ try{const fd=new FormData();fd.append('audio',blob,'order.wav');
+  const t=setTimeout(()=>{steps(2);setStatus('Understanding your order...')},1600);
+  const r=await fetch('/order/voice',{method:'POST',body:fd});clearTimeout(t);
+  let j;try{j=await r.json()}catch(e){throw new Error('The server returned an unreadable response (HTTP '+r.status+').')}
+  if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));
+  steps(3);setStatus('Done. Tap the mic to order again','');showOrder(j,true);setTimeout(()=>steps(4),700)}
+ catch(e){steps(-1);setStatus('Something went wrong','Tap the mic to try again');toast('<b>Could not process that order.</b> '+String(e.message||e).slice(0,300))}
+ finally{busy=false;stage.classList.remove('busy')}}
+async function runText(text){
+ if(!text.trim())return;busy=true;steps(2);setStatus('Understanding your order...','');
+ try{const r=await fetch('/order/text',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text})});const j=await r.json();if(!r.ok)throw new Error(j.error||('HTTP '+r.status));j.transcript=text;steps(4);setStatus('Done','');showOrder(j,false)}
+ catch(e){toast('<b>Could not process that.</b> '+String(e.message||e))}finally{busy=false}}
+$('go').onclick=()=>runText($('txt').value);$('txt').onkeydown=e=>{if(e.key==='Enter')runText($('txt').value)};
+let sampleN=0;
+$('smp').onclick=async()=>{if(busy)return;busy=true;stage.classList.add('busy');setStatus('A customer is speaking...','Synthetic voice made with Gnani Timbre');steps(0);
+ try{const r=await fetch('/sample?n='+(sampleN++%2));if(!r.ok)throw new Error('sample HTTP '+r.status);const b=await r.blob();
+  const u=URL.createObjectURL(b);aud.src=u;try{await aud.play()}catch(e){}
+  busy=false;await runVoice(b)}catch(e){steps(-1);setStatus('Something went wrong','');toast('<b>Sample failed.</b> '+e.message);busy=false;stage.classList.remove('busy')}};
+$('play').onclick=()=>{aud.currentTime=0;aud.play().catch(()=>toast('Your browser blocked audio. Tap the play button again.'))};
+$('conf').onclick=()=>{$('conf').hidden=true;const p=$('placed');p.hidden=false;p.textContent='ORDER PLACED (demo) - ready in 10 minutes'};
 </script>
+</body>
+</html>
