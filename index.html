@@ -160,9 +160,10 @@ function encodeWav(chunks,rate){let len=0;chunks.forEach(c=>len+=c.length);const
 async function startRec(){
  if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('<b>Microphone is not available here.</b> Open this page over https in Chrome or Safari (not inside an in-app browser like Instagram or WhatsApp). You can still use the sample customer or type your order.');return}
  const AC=window.AudioContext||window.webkitAudioContext;const ctx=new AC();try{await ctx.resume()}catch(e){}
+ setStatus('Waiting for microphone permission...','Tap Allow in the browser prompt');const slow=setTimeout(()=>toast('<b>Still waiting for the microphone.</b> If you do not see a permission prompt, check the lock icon near the address bar, or open this page directly in Chrome or Safari.'),7000);
  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
- catch(e){ctx.close();const m=e&&e.name;toast(m==='NotAllowedError'||m==='SecurityError'?'<b>Microphone permission is blocked.</b> Allow the mic for this site in your browser settings (the lock icon near the address bar), then tap the mic again.':m==='NotFoundError'?'<b>No microphone found</b> on this device.':'<b>Could not start the microphone</b> ('+(m||'unknown error')+').');return}
- const src=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=256;src.connect(analyser);
+ catch(e){clearTimeout(slow);setStatus('Tap the mic and speak','');ctx.close();const m=e&&e.name;toast(m==='NotAllowedError'||m==='SecurityError'?'<b>Microphone permission is blocked.</b> Allow the mic for this site in your browser settings (the lock icon near the address bar), then tap the mic again.':m==='NotFoundError'?'<b>No microphone found</b> on this device.':'<b>Could not start the microphone</b> ('+(m||'unknown error')+').');return}
+ clearTimeout(slow);document.getElementById('toast').classList.remove('show');const src=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=256;src.connect(analyser);
  const proc=ctx.createScriptProcessor(4096,1,1),chunks=[];proc.onaudioprocess=e=>chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
  const mute=ctx.createGain();mute.gain.value=0;src.connect(proc);proc.connect(mute);mute.connect(ctx.destination);
  rec={ctx,stream,proc,chunks,t0:Date.now(),auto:setTimeout(stopRec,25000)};
