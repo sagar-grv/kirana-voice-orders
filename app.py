@@ -119,7 +119,12 @@ def index():
 async def selftest():
     """Round trip on a fixed synthetic phrase: Timbre speaks it, Prisma transcribes it, parser reads it."""
     phrase = "bhaiya do kilo atta aur ek packet doodh dena"
-    wav = await tts(phrase, language="hi-en")
-    transcript = await stt(wav, "synthetic.wav", "hi-en")
+    try:
+        wav = await tts(phrase, language="hi-en")
+        transcript = await stt(wav, "synthetic.wav", "hi-en")
+    except httpx.HTTPStatusError as e:
+        return {"error": f"{e.request.url.path} -> {e.response.status_code}", "body": e.response.text[:300]}
+    except Exception as e:
+        return {"error": type(e).__name__, "detail": str(e)[:200]}
     items = parse_order(transcript)
     return {"phrase": phrase, "transcript": transcript, "items": items, "total": total(items)}
