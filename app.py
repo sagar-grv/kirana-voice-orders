@@ -123,12 +123,12 @@ PHRASES = [
 ]
 
 @app.get("/selftest")
-async def selftest(n: int = 0):
+async def selftest(n: int = 0, lang: str = "hi-IN"):
     """Round trip on a fixed synthetic phrase: Timbre speaks it, Prisma transcribes it, parser reads it."""
     phrase = PHRASES[n % len(PHRASES)]
     try:
         wav = await tts(phrase, language="hi-en")
-        transcript = await stt(wav, "synthetic.wav", "hi-IN")
+        transcript = await stt(wav, "synthetic.wav", lang if lang in ("hi-IN", "en-IN", "indic-auto") else "hi-IN")
     except httpx.HTTPStatusError as e:
         return {"error": f"{e.request.url.path} -> {e.response.status_code}", "body": e.response.text[:300]}
     except Exception as e:
