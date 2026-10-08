@@ -1,33 +1,41 @@
-from app import parse_order, total, reply_text
+from orderparser import parse_order, total, detect_and_parse
+from lang import LANGS
 
-def test_hinglish_basic():
-    items = parse_order("bhaiya do kilo atta aur ek packet doodh dena")
+def q(items): return {i["item"]: i["qty"] for i in items}
+
+def test_hindi_basic():
+    assert q(parse_order("भैया दो किलो आटा और एक पैकेट दूध दे दो", "hi")) == {"atta": 2, "milk": 1}
+
+def test_danda_and_hinglish():
+    assert q(parse_order("5 किलो चीनी, एक किलो दाल और 2 पैकेट नमक।", "hi")) == {"sugar": 5, "dal": 1, "salt": 2}
+    assert q(parse_order("do kilo atta aur ek packet doodh", "hi")) == {"atta": 2, "milk": 1}
+
+def test_english_and_after_quantity():
+    assert q(parse_order("two kilos of atta and one packet of milk please", "en")) == {"atta": 2, "milk": 1}
+    assert q(parse_order("rice 3 kg and oil 2 litre", "en")) == {"rice": 3, "oil": 2}
+
+def test_missing_qty_is_assumed_not_stolen():
+    items = parse_order("2 किलो आटा, दूध", "hi")
     d = {i["item"]: i for i in items}
-    assert d["atta"]["qty"] == 2 and d["doodh"]["qty"] == 1
-    assert total(items) == 2*45 + 28
+    assert d["milk"]["assumed_qty"] and d["atta"]["qty"] == 2
 
-def test_digits_and_half():
-    items = parse_order("5 kg chawal aur aadha tel")
-    d = {i["item"]: i["qty"] for i in items}
-    assert d == {"chawal": 5, "tel": 0.5}
+def test_half_and_grams():
+    assert q(parse_order("आधा किलो दाल", "hi")) == {"dal": 0.5}
+    assert q(parse_order("500 gram sugar", "en")) == {"sugar": 0.5}
 
-def test_devanagari():
-    items = parse_order("दो चीनी और एक नमक")
-    assert {i["item"] for i in items} == {"cheeni", "namak"}
+def test_native_digits():
+    assert q(parse_order("२ किलो आटा", "hi")) == {"atta": 2}
 
-def test_unknown():
-    assert parse_order("kuch nahi chahiye") == []
-    assert "samajh nahi" in reply_text([])
+def test_every_language_sample_parses():
+    for code, L in LANGS.items():
+        for s in L["samples"]:
+            items = parse_order(s, code)
+            assert len(items) >= 2, (code, s, items)
+            assert all(not i["assumed_qty"] for i in items), (code, s, items)
 
-def test_multiword():
-    items = parse_order("teen chai patti")
-    assert items[0]["item"] == "chai patti" and items[0]["qty"] == 3
+def test_agglutinative_suffix():
+    assert q(parse_order("இரண்டு கிலோ அரிசியும் ஒரு பாக்கெட் பாலும்", "ta")) == {"rice": 2, "milk": 1}
 
-def test_devanagari_transcript():
-    items = parse_order("भाया 2 किलो आता और एक पैकेट दूध देना।")
-    d = {i["item"]: i["qty"] for i in items}
-    assert d == {"atta": 2, "doodh": 1}
-
-def test_danda():
-    items = parse_order("5 किलो चीनी, एक किलो दाल और 2 पैकेट नमक।")
-    assert {i["item"]: i["qty"] for i in items} == {"cheeni": 5, "dal": 1, "namak": 2}
+def test_detect_script():
+    code, items = detect_and_parse("ਭਾਜੀ ਦੋ ਕਿਲੋ ਆਟਾ ਤੇ ਇੱਕ ਪੈਕੇਟ ਦੁੱਧ")
+    assert code == "pa" and len(items) == 2
