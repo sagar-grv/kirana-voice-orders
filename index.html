@@ -24,8 +24,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
 .pill b{color:var(--saf2);font-weight:500}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 10px var(--grn);animation:pulse 2s infinite}
 @keyframes pulse{50%{opacity:.35}}
-main{max-width:1200px;margin:0 auto;padding:4px clamp(16px,4vw,48px) 70px;display:grid;grid-template-columns:1.05fr .95fr;gap:28px}
-@media(max-width:920px){main{grid-template-columns:1fr}.pill.hide{display:none}}
+main{max-width:1200px;margin:0 auto;padding:4px clamp(16px,4vw,48px) 70px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px}
+main>section{min-width:0}
+@media(max-width:920px){main{grid-template-columns:minmax(0,1fr)}.ticket{position:static!important}.pill.hide{display:none}}
 h1{font-family:'Bricolage Grotesque';font-weight:800;font-size:clamp(2.2rem,6vw,3.9rem);line-height:1;letter-spacing:-.045em;margin:12px 0 12px}
 h1 em{font-style:normal;background:linear-gradient(90deg,var(--saf),#ff5e3a 60%,var(--saf2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .rot{display:block;height:1.15em;overflow:hidden;font-family:var(--f);font-weight:700;letter-spacing:-.02em;color:var(--saf2);font-size:.62em;margin-top:6px}
@@ -192,7 +193,7 @@ function unitOf(key){const c=orderLang||(lang==='auto'?'en':lang);const e=(catal
 
 /* ---------- rotating multilingual headline ---------- */
 const GREET=['बोलो, ऑर्डर हो जाएगा','சொல்லுங்கள், ஆர்டர் ரெடி','చెప్పండి, ఆర్డర్ రెడీ','বলুন, অর্ডার হয়ে যাবে','બોલો, ઓર્ડર થઈ જશે','ಹೇಳಿ, ಆರ್ಡರ್ ರೆಡಿ','പറയൂ, ഓർഡർ റെഡി','ਬੋਲੋ, ਆਰਡਰ ਹੋ ਜਾਊ','सांगा, ऑर्डर तयार','Say it. Order done.'];
-(function(){const el=$('rotin');let i=0;el.textContent=GREET[0];setInterval(()=>{el.style.transform='translateY(-100%)';el.style.opacity=0;setTimeout(()=>{i=(i+1)%GREET.length;el.style.transition='none';el.style.transform='translateY(100%)';el.textContent=GREET[i];requestAnimationFrame(()=>requestAnimationFrame(()=>{el.style.transition='transform .55s cubic-bezier(.7,0,.2,1),opacity .55s';el.style.transform='translateY(0)';el.style.opacity=1}))},420)},2600)})();
+(function(){const el=$('rotin');let i=0;el.textContent=GREET[0];setInterval(()=>{el.style.transform='translateY(-100%)';el.style.opacity=0;setTimeout(()=>{i=(i+1)%GREET.length;el.style.transition='none';el.style.transform='translateY(100%)';el.textContent=GREET[i];setTimeout(()=>{el.style.transition='transform .55s cubic-bezier(.7,0,.2,1),opacity .55s';el.style.transform='translateY(0)';el.style.opacity=1},40)},420)},2600)})();
 $('rotin').style.transition='transform .55s cubic-bezier(.7,0,.2,1),opacity .55s';
 
 /* ---------- waveform ---------- */
