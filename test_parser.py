@@ -22,3 +22,8 @@ def test_unknown():
 def test_multiword():
     items = parse_order("teen chai patti")
     assert items[0]["item"] == "chai patti" and items[0]["qty"] == 3
+
+def test_devanagari_transcript():
+    items = parse_order("भाया 2 किलो आता और एक पैकेट दूध देना।")
+    d = {i["item"]: i["qty"] for i in items}
+    assert d == {"atta": 2, "doodh": 1}
